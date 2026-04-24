@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AdminLayout } from "@/components/layout/admin-layout";
+import AdminLayout from "@/components/layout/admin-layout";
 
 export default function AdminAppPage() {
   return (

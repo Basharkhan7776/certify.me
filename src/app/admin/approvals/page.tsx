@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AdminLayout } from "@/components/layout/admin-layout";
+import AdminLayout from "@/components/layout/admin-layout";
 import { mockApprovals } from "@/lib/mock-data";
 
 export default function AdminApprovalsPage() {
