@@ -23,6 +23,7 @@ VeriMint is a two-layer certificate verification system:
 | --------- | --------- | -------------------------------------- |
 | `orgCode` | `bytes32` | Unique identifier for the organization |
 | `addr`    | `address` | Wallet address of the org (issuer)     |
+| `blocked` | `bool`    | Admin can block org from minting       |
 
 #### `Cert`
 
@@ -31,19 +32,27 @@ VeriMint is a two-layer certificate verification system:
 | `uri`         | `string`  | IPFS URI pointing to metadata JSON (Pinata) |
 | `studentAddr` | `address` | Recipient's wallet address                  |
 | `orgCode`     | `bytes32` | Which org issued this cert                  |
+| `revoked`     | `bool`    | On-chain validity flag (false = valid)      |
 
 ---
 
 ### Contract Functions
 
-| Function                                             | Access     | Description                                                                            |
-| ---------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------- |
-| `mint(address student, string uri, bytes32 orgCode)` | Org only   | Mints a soulbound ERC-721 cert to student wallet. tokenURI → Pinata IPFS               |
-| `verify(uint256 tokenId)`                            | Public     | Returns cert metadata: holder address, URI, org code                                   |
-| `tokenToURI(uint256 tokenId)`                        | Public     | Returns raw IPFS URI for a given token ID                                              |
-| `addOrg(bytes32 orgCode, address addr)`              | Owner only | Registers a new institution as an authorized issuer                                    |
-| `removeOrg(bytes32 orgCode)`                         | Owner only | Revokes an org's minting rights                                                        |
-| `uriChanger(uint256 tokenId, string newURI)`         | Org only   | Updates the IPFS URI (e.g. re-issue corrected cert). Org must own the cert's `orgCode` |
+| Function                                                   | Access     | Description                                                                                                    |
+| ---------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
+| `mint(address student, string uri, bytes32 orgCode)`       | Org only   | Mints a soulbound ERC-721 cert to student wallet. tokenURI → Pinata IPFS. Only approved, unblocked orgs.       |
+| `mintBatch(address[] students, string[] uris, bytes32 orgCode)` | Org only | Signature-based bulk minting to reduce gas costs for large issuances.                                          |
+| `verify(uint256 tokenId)`                                  | Public     | Returns cert metadata: holder address, URI, org code, revoked status.                                          |
+| `tokenToURI(uint256 tokenId)`                              | Public     | Returns raw IPFS URI for a given token ID.                                                                     |
+| `getCertsByStudent(address student)`                       | Public     | Returns all tokenIds owned by a student wallet.                                                                |
+| `getCertsByOrg(bytes32 orgCode)`                           | Public     | Returns all tokenIds issued by an organization.                                                                |
+| `resolveDetails(uint256 tokenId)`                          | Public     | Returns issuer org address and holder student address for a given tokenId.                                     |
+| `addOrg(bytes32 orgCode, address addr)`                    | Owner only | Registers a new institution as an authorized issuer.                                                           |
+| `removeOrg(bytes32 orgCode)`                               | Owner only | Revokes an org's minting rights.                                                                               |
+| `blockOrg(bytes32 orgCode)`                                | Owner only | Blocks an org from minting without removing them entirely.                                                     |
+| `unblockOrg(bytes32 orgCode)`                              | Owner only | Unblocks a previously blocked org.                                                                             |
+| `revokeCert(uint256 tokenId)`                              | Org only   | Sets on-chain revoked flag to true. Used for incorrect certificates — preserves immutability.                  |
+| `uriChanger(uint256 tokenId, string newURI)`               | Org only   | Updates the IPFS URI (e.g. re-issue corrected cert). Org must own the cert's `orgCode`. Logs in CertRecord.    |
 
 > **Soulbound enforcement**: `_update()` is overridden to block all transfers after minting. Certs are non-transferable by design.
 
@@ -54,9 +63,53 @@ VeriMint is a two-layer certificate verification system:
 | Data                                                   | Where                                                         |
 | ------------------------------------------------------ | ------------------------------------------------------------- |
 | Certificate image / PDF                                | Pinata (IPFS)                                                 |
-| Metadata JSON (`name`, `issuer`, `date`, `attributes`) | Pinata (IPFS)                                                 |
+| Metadata JSON (`name`, `issuer`, `issueDate`, `expiryDate`, `description`, `achievement`, `verificationLink`) | Pinata (IPFS) |
 | Achievement badge image                                | Pinata (IPFS) — separate CID per achievement                  |
-| On-chain                                               | Only `tokenURI` (IPFS CID string) + `orgCode` + `studentAddr` |
+| On-chain                                               | Only `tokenURI` (IPFS CID string) + `orgCode` + `studentAddr` + `revoked` flag |
+
+### Metadata JSON Schema
+
+```json
+{
+  "name": "Blockchain Fundamentals",
+  "description": "Completed course on blockchain fundamentals",
+  "image": "ipfs://Qm...certificate-image",
+  "attributes": [
+    { "trait_type": "Achievement", "value": "Course Completion" },
+    { "trait_type": "Grade", "value": "A" },
+    { "trait_type": "Duration", "value": "12 weeks" }
+  ],
+  "studentAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18",
+  "orgCode": "0x54454348...",
+  "issueDate": "2025-03-15",
+  "expiryDate": "2027-03-15",
+  "verificationLink": "https://certify.me/verify?token=1"
+}
+```
+
+> **Expiry is optional** — if `expiryDate` is omitted, the certificate never expires.
+
+---
+
+### Minting Flow
+
+1. Org enters student and certificate details via frontend UI
+2. Backend validates that the requesting wallet belongs to an approved, unblocked organization
+3. Backend constructs standardized metadata JSON and uploads to IPFS via Pinata (protected API credentials)
+4. Pinata returns CID → backend returns URI to frontend
+5. Org previews certificate and explicitly initiates minting
+6. Org's wallet signs transaction and submits URI to smart contract
+7. Contract mints soulbound NFT to student wallet
+
+> Only authorized issuers can mint. Metadata remains consistent, tamper-resistant, and securely linked to on-chain record.
+
+---
+
+### Revocation & Expiry
+
+- **Revocation**: Handled via on-chain `revoked` flag rather than modifying metadata — preserves immutability. Org calls `revokeCert(tokenId)` to invalidate.
+- **Expiry**: Stored in IPFS metadata as `expiryDate` (optional). Verification interface checks expiry client-side against current date.
+- **Blocking**: Admin can `blockOrg(orgCode)` to prevent an org from minting without removing their on-chain record.
 
 ---
 
@@ -64,17 +117,22 @@ VeriMint is a two-layer certificate verification system:
 
 ### Routes
 
-| Route             | Description                                                                                                |
-| ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| `/`               | Landing page                                                                                               |
-| `/auth`           | OAuth (Google/GitHub) + wallet connect (MetaMask / WalletConnect)                                          |
-| `/app`            | Dashboard — student sees their certs; org sees certs they've minted                                        |
-| `/verify`         | Public verification page — anyone can verify a cert using a wallet address or token ID (no login required) |
-| `/org-onboarding` | Org registration flow + admin approval queue                                                               |
-| `/cert/[id]`      | Individual certificate page — fetches on-chain data + IPFS metadata, renders cert card                     |
-| `/org/[id]`       | Public org profile — lists all certs issued by this org                                                    |
-| `/profile`        | Logged-in user's profile and linked wallet                                                                 |
-| `/user/[id]`      | Public student profile — shows verified certificates                                                       |
+| Route              | Description                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| `/`                | Landing page                                                                                   |
+| `/auth`            | OAuth (Google/GitHub) + wallet connect (MetaMask / WalletConnect)                              |
+| `/app`             | Dashboard — student sees their certs; org sees certs they've minted                            |
+| `/verify`          | Public verification page — anyone can verify a cert using a wallet address (no login required) |
+| `/org-onboarding`  | Org registration flow + admin approval queue                                                   |
+| `/cert/[id]`       | Individual certificate page — fetches on-chain data + IPFS metadata, renders cert card         |
+| `/org/[id]`        | Public org profile — lists all certs issued by this org                                        |
+| `/profile`         | Profile page for both users and orgs                                                           |
+| `/user/[id]`       | Public student profile — shows verified certificates                                           |
+| `/admin`           | Admin login using email and password                                                           |
+| `/admin/app`       | Admin dashboard — wallet connect for on-chain actions                                          |
+| `/admin/approvals` | Admin page to review and approve org onboarding requests                                       |
+| `/admin/users`     | Admin page to block/unblock users                                                              |
+| `/admin/orgs`      | Admin page to block/unblock orgs                                                               |
 
 ---
 
@@ -84,64 +142,6 @@ VeriMint is a two-layer certificate verification system:
 - **Wallet connect** — MetaMask / WalletConnect for orgs who need to sign mint transactions
 - Session stored server-side (NextAuth.js or Lucia)
 - Wallet address linked to OAuth account in DB after first connect
-
----
-
-## Database Schema (PostgreSQL via Prisma)
-
-```prisma
-model Org {
-  id          String   @id @default(cuid())
-  orgCode     String   @unique   // mirrors on-chain orgCode (hex)
-  name        String
-  walletAddr  String   @unique
-  approved    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-}
-
-model User {
-  id          String   @id @default(cuid())
-  email       String?  @unique
-  walletAddr  String?  @unique
-  name        String?
-  createdAt   DateTime @default(now())
-}
-
-model CertRecord {
-  id          String   @id @default(cuid())
-  tokenId     Int      @unique
-  orgCode     String
-  studentAddr String
-  ipfsUri     String
-  issuedAt    DateTime @default(now())
-}
-```
-
----
-
-## Environment Variables
-
-```env
-# Blockchain
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x...
-NEXT_PUBLIC_CHAIN_ID=80001
-RPC_URL=https://rpc-mumbai.maticvigil.com
-
-# IPFS
-PINATA_JWT=...
-PINATA_GATEWAY=https://gateway.pinata.cloud
-
-# Database
-DATABASE_URL=postgresql://...
-
-# Auth
-NEXTAUTH_SECRET=...
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-
-# Admin
-OWNER_PRIVATE_KEY=...   # only used in deploy scripts, never exposed to client
-```
 
 ---
 
@@ -155,39 +155,38 @@ OWNER_PRIVATE_KEY=...   # only used in deploy scripts, never exposed to client
 | `uriChanger` function                    | Allows correcting a cert URI without revoking and re-minting (e.g. typo fix) |
 | Public `/verify` route (no login)        | Employers verify without needing an account — zero friction                  |
 | Polygon Mumbai (testnet)                 | Zero gas cost for demo; same EVM as mainnet                                  |
+| Revocation via on-chain flag             | Preserves immutability — metadata on IPFS is never modified                  |
+| Optional expiry in metadata              | Some certificates don't expire; handled client-side during verification      |
+| Signature-based bulk minting             | Reduces gas costs for large certificate issuances                            |
 
 ---
 
-## Folder Structure
+## Tech Stack & Development Tools
 
+### Frontend Framework
+- **Next.js** (App Router) — React framework for production
+- **Bun** — Fast JavaScript runtime & package manager
+
+### UI/UX & Components
+- **shadcn/ui** — Re-usable components built on Radix UI and Tailwind CSS
+- **Tailwind CSS** — Utility-first CSS framework
+- **Lucide React** — Icon library
+
+### Commands (Bun)
+```bash
+bun dev              # Start development server
+bun build            # Production build
+bun lint             # Run ESLint
+bun install          # Install dependencies
+bunx shadcn@latest add <component>  # Add shadcn components
 ```
-verimint/
-├── contracts/
-│   └── VeriMint.sol          # Main ERC-721 soulbound contract
-├── scripts/
-│   └── deploy.ts             # Hardhat deploy → Polygon Mumbai
-├── test/
-│   └── VeriMint.test.ts
-├── app/                      # Next.js App Router
-│   ├── page.tsx              # /
-│   ├── auth/page.tsx         # /auth
-│   ├── app/page.tsx          # /app (dashboard)
-│   ├── verify/page.tsx       # /verify
-│   ├── org-onboarding/page.tsx
-│   ├── cert/[id]/page.tsx
-│   ├── org/[id]/page.tsx
-│   ├── profile/page.tsx
-│   └── user/[id]/page.tsx
-├── lib/
-│   ├── contract.ts           # Viem contract client (read/write)
-│   ├── pinata.ts             # Upload image + metadata to IPFS
-│   ├── prisma.ts             # DB client
-│   └── auth.ts               # NextAuth config
-├── prisma/
-│   └── schema.prisma
-├── hardhat.config.ts
-└── agent.md                  # ← you are here
-```
+
+### UI/UX Guidelines
+- Follow shadcn/ui design patterns for consistent components
+- Use Tailwind CSS utility classes for styling
+- Maintain responsive design across all breakpoints
+- Ensure accessibility (a11y) compliance with Radix UI primitives
+- Use consistent color scheme and typography throughout
 
 ---
 
@@ -199,3 +198,7 @@ verimint/
 - Org approval is a two-step process: org submits via `/org-onboarding` → admin sets `approved: true` in DB → admin calls `addOrg()` on-chain with org's wallet.
 - Never expose `OWNER_PRIVATE_KEY` to the frontend. All admin contract calls go through a server action or API route.
 - `uriChanger` is an escape hatch — log every URI change in `CertRecord` for auditability.
+- Verification works via QR code or token ID → routes to `/verify` → pulls metadata from IPFS → cross-checks against on-chain data.
+- Revocation uses on-chain `revoked` flag, not metadata modification — preserves immutability.
+- Expiry is optional in metadata; if present, verification checks `expiryDate` client-side against current date.
+- `getCertsByStudent()` and `getCertsByOrg()` provide efficient lookups for student/org certificate lists.
