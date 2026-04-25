@@ -1,8 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, Plus, Wallet } from "lucide-react";
+import {
+  Shield,
+  Plus,
+  Wallet,
+  Search,
+  ArrowUpDown,
+  Filter,
+  CheckCircle,
+  Building2,
+  User,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CertCard } from "@/components/cert-card";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,7 +26,14 @@ import { useAccount } from "wagmi";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 interface UserRole {
   isOrg: boolean;
@@ -33,6 +51,9 @@ export default function DashboardPage() {
 
   const [userRole, setUserRole] = useState<UserRole>({ isOrg: false });
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"date" | "name">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     setMounted(true);
@@ -83,6 +104,30 @@ export default function DashboardPage() {
 
   const isLoading = status === "loading" || !mounted;
 
+  const filteredCerts = useMemo(() => {
+    if (!certs) return [];
+    let filtered = certs.filter((cert: any) => {
+      const query = searchQuery.toLowerCase();
+      return (
+        (cert.name || "").toLowerCase().includes(query) ||
+        (cert.orgCode || "").toLowerCase().includes(query) ||
+        String(cert.tokenId).includes(query)
+      );
+    });
+
+    filtered.sort((a: any, b: any) => {
+      const multiplier = sortOrder === "asc" ? 1 : -1;
+      if (sortBy === "date") {
+        const dateA = a.issueDate ? new Date(a.issueDate).getTime() : 0;
+        const dateB = b.issueDate ? new Date(b.issueDate).getTime() : 0;
+        return (dateA - dateB) * multiplier;
+      }
+      return (a.name || "").localeCompare(b.name || "") * multiplier;
+    });
+
+    return filtered;
+  }, [certs, searchQuery, sortBy, sortOrder]);
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="container flex h-14 items-center justify-between border-b">
@@ -101,19 +146,6 @@ export default function DashboardPage() {
       </header>
 
       <main className="flex-1 container py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          {userRole.isOrg && isConnected && (
-            <Button
-              className="gap-2"
-              onClick={() => dispatch(setMintDialogOpen(true))}
-            >
-              <Plus className="h-4 w-4" />
-              Mint Certificate
-            </Button>
-          )}
-        </div>
-
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Wallet className="h-12 w-12 text-muted-foreground mb-4 animate-pulse" />
@@ -131,62 +163,165 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <Tabs
-            value={activeTab}
-            onValueChange={(v) =>
-              dispatch(setActiveTab(v as "my-certs" | "minted"))
-            }
-            className="w-full"
-          >
-            <TabsList>
-              <TabsTrigger value="my-certs">My Certificates</TabsTrigger>
-              {userRole.isOrg && (
-                <TabsTrigger value="minted">Minted by Me</TabsTrigger>
-              )}
-            </TabsList>
-
-            <TabsContent value="my-certs" className="mt-6">
-              {loadingCerts || loadingMetadata ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="space-y-3">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                      <Skeleton className="h-24 w-full" />
-                    </div>
-                  ))}
+          <>
+            <div className="flex flex-col gap-6 mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+                  <p className="text-muted-foreground mt-1">
+                    {userRole.isOrg ? "Manage and issue certificates" : "View your verified certificates"}
+                  </p>
                 </div>
-              ) : certs && certs.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {certs.map((cert: any) => (
-                    <CertCard
-                      key={cert.tokenId}
-                      id={String(cert.tokenId)}
-                      name={cert.name || `Certificate #${cert.tokenId}`}
-                      issuer={cert.orgCode || "Unknown"}
-                      date={
-                        cert.issueDate
-                          ? new Date(cert.issueDate).toLocaleDateString()
-                          : ""
-                      }
-                      tokenId={cert.tokenId}
-                      orgCode={cert.orgCode || ""}
+                {userRole.isOrg && isConnected && (
+                  <Button
+                    className="gap-2"
+                    onClick={() => dispatch(setMintDialogOpen(true))}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Mint Certificate
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(v) =>
+                    dispatch(setActiveTab(v as "my-certs" | "minted"))
+                  }
+                >
+                  <TabsList>
+                    <TabsTrigger value="my-certs" className="gap-2">
+                      <User className="h-4 w-4" />
+                      My Certificates
+                    </TabsTrigger>
+                    {userRole.isOrg && (
+                      <TabsTrigger value="minted" className="gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Minted by Me
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+                </Tabs>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:flex-initial">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search certificates..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 w-full sm:w-64"
                     />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  No certificates found for this wallet.
-                </div>
-              )}
-            </TabsContent>
+                  </div>
 
-            {userRole.isOrg && userRole.orgCode && (
-              <TabsContent value="minted" className="mt-6">
-                <MintedCertsTab orgCode={userRole.orgCode} />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Filter className="h-4 w-4" />
+                        {sortBy === "date" ? "Date" : "Name"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setSortBy("date")}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${sortBy === "date" ? "opacity-100" : "opacity-0"}`} />
+                        Date
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortBy("name")}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${sortBy === "name" ? "opacity-100" : "opacity-0"}`} />
+                        Name
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <ArrowUpDown className="h-4 w-4" />
+                        {sortOrder === "desc" ? "Newest" : "Oldest"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setSortOrder("desc")}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${sortOrder === "desc" ? "opacity-100" : "opacity-0"}`} />
+                        Newest First
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSortOrder("asc")}>
+                        <CheckCircle className={`h-4 w-4 mr-2 ${sortOrder === "asc" ? "opacity-100" : "opacity-0"}`} />
+                        Oldest First
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </div>
+
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) =>
+                dispatch(setActiveTab(v as "my-certs" | "minted"))
+              }
+              className="w-full"
+            >
+              <TabsContent value="my-certs" className="mt-0">
+                {loadingCerts || loadingMetadata ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className="rounded-xl border bg-card p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-5 w-16" />
+                        </div>
+                        <Skeleton className="h-20 w-full" />
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-3 w-20" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredCerts.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredCerts.map((cert: any) => (
+                      <CertCard
+                        key={cert.tokenId}
+                        id={String(cert.tokenId)}
+                        name={cert.name || `Certificate #${cert.tokenId}`}
+                        issuer={cert.orgCode || "Unknown"}
+                        date={
+                          cert.issueDate
+                            ? new Date(cert.issueDate).toLocaleDateString()
+                            : ""
+                        }
+                        tokenId={cert.tokenId}
+                        orgCode={cert.orgCode || ""}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="rounded-full bg-muted p-4 mb-4">
+                      <Search className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-1">
+                      {searchQuery ? "No matching certificates" : "No certificates found"}
+                    </h3>
+                    <p className="text-muted-foreground max-w-sm">
+                      {searchQuery
+                        ? `No certificates match "${searchQuery}". Try a different search.`
+                        : "Connect your wallet or mint a certificate to get started."}
+                    </p>
+                  </div>
+                )}
               </TabsContent>
-            )}
-          </Tabs>
+
+              {userRole.isOrg && userRole.orgCode && (
+                <TabsContent value="minted" className="mt-0">
+                  <MintedCertsTab orgCode={userRole.orgCode} />
+                </TabsContent>
+              )}
+            </Tabs>
+          </>
         )}
       </main>
 

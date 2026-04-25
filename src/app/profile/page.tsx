@@ -155,7 +155,6 @@ export default function ProfilePage() {
       <div className="flex min-h-screen flex-col">
         <header className="container flex h-14 items-center justify-between border-b">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Shield className="h-5 w-5" />
             Certify.me
           </Link>
           <ThemeToggle />
@@ -202,14 +201,15 @@ export default function ProfilePage() {
       <div className="flex min-h-screen flex-col">
         <header className="container flex h-14 items-center justify-between border-b">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Shield className="h-5 w-5" />
             Certify.me
           </Link>
           <ThemeToggle />
         </header>
         <main className="flex-1 container py-24 text-center">
           <h1 className="text-2xl font-bold mb-2">Sign In Required</h1>
-          <p className="text-muted-foreground mb-6">Please sign in to view your profile.</p>
+          <p className="text-muted-foreground mb-6">
+            Please sign in to view your profile.
+          </p>
           <Link href="/auth">
             <Button>Sign In</Button>
           </Link>
@@ -223,14 +223,15 @@ export default function ProfilePage() {
       <div className="flex min-h-screen flex-col">
         <header className="container flex h-14 items-center justify-between border-b">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Shield className="h-5 w-5" />
             Certify.me
           </Link>
           <ThemeToggle />
         </header>
         <main className="flex-1 container py-24 text-center">
           <h1 className="text-2xl font-bold mb-2">Profile Not Found</h1>
-          <p className="text-muted-foreground">No profile data found for your account.</p>
+          <p className="text-muted-foreground">
+            No profile data found for your account.
+          </p>
         </main>
       </div>
     );
@@ -238,7 +239,9 @@ export default function ProfilePage() {
 
   const isOrg = !!profile.org;
   const walletAddr = profile.user.walletAddr || address || "";
-  const initials = (profile.user.name || profile.user.email || "U").charAt(0).toUpperCase();
+  const initials = (profile.user.name || profile.user.email || "U")
+    .charAt(0)
+    .toUpperCase();
 
   const handleSave = () => {
     const body: Record<string, string> = { name: formName };
@@ -267,7 +270,6 @@ export default function ProfilePage() {
     <div className="flex min-h-screen flex-col">
       <header className="container flex h-14 items-center justify-between border-b">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Shield className="h-5 w-5" />
           Certify.me
         </Link>
         <div className="flex items-center gap-2">
@@ -291,7 +293,11 @@ export default function ProfilePage() {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Profile</CardTitle>
                 {!editing ? (
-                  <Button variant="ghost" size="icon" onClick={() => setEditing(true)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditing(true)}
+                  >
                     <Pencil className="h-4 w-4" />
                   </Button>
                 ) : (
@@ -299,7 +305,12 @@ export default function ProfilePage() {
                     <Button variant="ghost" size="icon" onClick={handleCancel}>
                       <X className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={handleSave} disabled={updateMutation.isPending}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleSave}
+                      disabled={updateMutation.isPending}
+                    >
                       <Save className="h-4 w-4" />
                     </Button>
                   </div>
@@ -308,7 +319,9 @@ export default function ProfilePage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarFallback className="text-lg">{initials}</AvatarFallback>
+                    <AvatarFallback className="text-lg">
+                      {initials}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     {editing ? (
@@ -318,7 +331,9 @@ export default function ProfilePage() {
                         className="text-lg font-semibold h-8"
                       />
                     ) : (
-                      <h2 className="text-lg font-semibold">{profile.user.name || "Unnamed User"}</h2>
+                      <h2 className="text-lg font-semibold">
+                        {profile.user.name || "Unnamed User"}
+                      </h2>
                     )}
                     <Badge variant="secondary" className="mt-1">
                       {isOrg ? "Organization" : "Student"}
@@ -330,21 +345,36 @@ export default function ProfilePage() {
 
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Email</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Email
+                    </Label>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{profile.user.email || "—"}</span>
+                      <span className="text-sm">
+                        {profile.user.email || "—"}
+                      </span>
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Wallet</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Wallet
+                    </Label>
                     <div className="flex items-center gap-2">
                       <Wallet className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-mono">
-                        {walletAddr ? `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}` : "—"}
+                        {walletAddr
+                          ? `${walletAddr.slice(0, 6)}...${walletAddr.slice(
+                              -4,
+                            )}`
+                          : "—"}
                       </span>
                       {walletAddr && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyWallet}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={copyWallet}
+                        >
                           <Copy className="h-3 w-3" />
                         </Button>
                       )}
@@ -352,11 +382,17 @@ export default function ProfilePage() {
                   </div>
                   {profile.user.oauthProvider && (
                     <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Linked Account</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        Linked Account
+                      </Label>
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm capitalize">{profile.user.oauthProvider}</span>
-                        <Badge variant="outline" className="text-xs">Connected</Badge>
+                        <span className="text-sm capitalize">
+                          {profile.user.oauthProvider}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          Connected
+                        </Badge>
                       </div>
                     </div>
                   )}
@@ -374,13 +410,19 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Org Code</Label>
-                    <span className="text-sm font-mono">{profile.org.orgCode}</span>
+                    <Label className="text-xs text-muted-foreground">
+                      Org Code
+                    </Label>
+                    <span className="text-sm font-mono">
+                      {profile.org.orgCode}
+                    </span>
                   </div>
                   {editing ? (
                     <>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Website</Label>
+                        <Label className="text-xs text-muted-foreground">
+                          Website
+                        </Label>
                         <Input
                           value={formWebsite}
                           onChange={(e) => setFormWebsite(e.target.value)}
@@ -388,7 +430,9 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Contact Email</Label>
+                        <Label className="text-xs text-muted-foreground">
+                          Contact Email
+                        </Label>
                         <Input
                           type="email"
                           value={formContactEmail}
@@ -397,7 +441,9 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Description</Label>
+                        <Label className="text-xs text-muted-foreground">
+                          Description
+                        </Label>
                         <Textarea
                           value={formDescription}
                           onChange={(e) => setFormDescription(e.target.value)}
@@ -410,7 +456,9 @@ export default function ProfilePage() {
                     <>
                       {profile.org.website && (
                         <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Website</Label>
+                          <Label className="text-xs text-muted-foreground">
+                            Website
+                          </Label>
                           <div className="flex items-center gap-2">
                             <Globe className="h-4 w-4 text-muted-foreground" />
                             <a
@@ -426,16 +474,22 @@ export default function ProfilePage() {
                       )}
                       {profile.org.contactEmail && (
                         <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Contact Email</Label>
+                          <Label className="text-xs text-muted-foreground">
+                            Contact Email
+                          </Label>
                           <div className="flex items-center gap-2">
                             <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{profile.org.contactEmail}</span>
+                            <span className="text-sm">
+                              {profile.org.contactEmail}
+                            </span>
                           </div>
                         </div>
                       )}
                       {profile.org.description && (
                         <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Description</Label>
+                          <Label className="text-xs text-muted-foreground">
+                            Description
+                          </Label>
                           <p className="text-sm">{profile.org.description}</p>
                         </div>
                       )}
@@ -469,7 +523,9 @@ export default function ProfilePage() {
             {isOrg ? (
               <Tabs defaultValue="received">
                 <TabsList>
-                  <TabsTrigger value="received">Received Certificates</TabsTrigger>
+                  <TabsTrigger value="received">
+                    Received Certificates
+                  </TabsTrigger>
                   <TabsTrigger value="minted">Minted by Me</TabsTrigger>
                 </TabsList>
 
@@ -491,11 +547,15 @@ export default function ProfilePage() {
                             <div key={cert.tokenId} className="space-y-2">
                               <CertCard
                                 id={String(cert.tokenId)}
-                                name={cert.name || `Certificate #${cert.tokenId}`}
+                                name={
+                                  cert.name || `Certificate #${cert.tokenId}`
+                                }
                                 issuer={cert.orgCode || "Unknown"}
                                 date={
                                   cert.issueDate
-                                    ? new Date(cert.issueDate).toLocaleDateString()
+                                    ? new Date(
+                                        cert.issueDate,
+                                      ).toLocaleDateString()
                                     : ""
                                 }
                                 tokenId={cert.tokenId}
@@ -504,7 +564,9 @@ export default function ProfilePage() {
                               <div className="px-1">
                                 <VerifyBadge
                                   tokenId={cert.tokenId}
-                                  expectedStudent={cert.studentAddr || walletAddr}
+                                  expectedStudent={
+                                    cert.studentAddr || walletAddr
+                                  }
                                   expectedOrgCode={cert.orgCode}
                                 />
                               </div>
@@ -538,11 +600,15 @@ export default function ProfilePage() {
                             <div key={cert.tokenId} className="space-y-2">
                               <CertCard
                                 id={String(cert.tokenId)}
-                                name={cert.name || `Certificate #${cert.tokenId}`}
+                                name={
+                                  cert.name || `Certificate #${cert.tokenId}`
+                                }
                                 issuer={profile.org?.name || "Unknown"}
                                 date={
                                   cert.issueDate
-                                    ? new Date(cert.issueDate).toLocaleDateString()
+                                    ? new Date(
+                                        cert.issueDate,
+                                      ).toLocaleDateString()
                                     : ""
                                 }
                                 tokenId={cert.tokenId}

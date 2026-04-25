@@ -8,7 +8,11 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CertCard } from "@/components/cert-card";
 import { ShareButton } from "@/components/share-button";
-import { getCertsByStudent, getCertificate, resolveDetails } from "@/lib/contract";
+import {
+  getCertsByStudent,
+  getCertificate,
+  resolveDetails,
+} from "@/lib/contract";
 import { shortAddress, bytes32ToString } from "@/lib/utils-admin";
 import { Certificate } from "@/models/Certificate";
 import { connectDB } from "@/lib/db";
@@ -33,9 +37,14 @@ interface CertSummary {
 
 async function getUserData(walletAddr: string): Promise<UserData | null> {
   try {
-    const res = await fetch(`${process.env.AUTH_URL || "http://localhost:3000"}/api/users/${walletAddr}`, {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${
+        process.env.AUTH_URL || "http://localhost:3000"
+      }/api/users/${walletAddr}`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -105,7 +114,11 @@ async function fetchCertSummary(tokenId: bigint): Promise<CertSummary | null> {
   }
 }
 
-export default async function UserPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function UserPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id: walletAddr } = await params;
 
   if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddr)) {
@@ -113,14 +126,15 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
       <div className="flex min-h-screen flex-col">
         <header className="container flex h-14 items-center justify-between border-b">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Shield className="h-5 w-5" />
             Certify.me
           </Link>
           <ThemeToggle />
         </header>
         <main className="flex-1 container py-24 text-center">
           <h1 className="text-2xl font-bold mb-2">Invalid Address</h1>
-          <p className="text-muted-foreground">The provided wallet address is not valid.</p>
+          <p className="text-muted-foreground">
+            The provided wallet address is not valid.
+          </p>
           <Link href="/">
             <Button className="mt-6">Go Home</Button>
           </Link>
@@ -145,14 +159,15 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
       <div className="flex min-h-screen flex-col">
         <header className="container flex h-14 items-center justify-between border-b">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Shield className="h-5 w-5" />
             Certify.me
           </Link>
           <ThemeToggle />
         </header>
         <main className="flex-1 container py-24 text-center">
           <h1 className="text-2xl font-bold mb-2">User Not Found</h1>
-          <p className="text-muted-foreground">No data found for this wallet address.</p>
+          <p className="text-muted-foreground">
+            No data found for this wallet address.
+          </p>
           <Link href="/">
             <Button className="mt-6">Go Home</Button>
           </Link>
@@ -161,13 +176,14 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const shareUrl = `${process.env.AUTH_URL || "http://localhost:3000"}/user/${walletAddr}`;
+  const shareUrl = `${
+    process.env.AUTH_URL || "http://localhost:3000"
+  }/user/${walletAddr}`;
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="container flex h-14 items-center justify-between border-b">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Shield className="h-5 w-5" />
           Certify.me
         </Link>
         <ThemeToggle />

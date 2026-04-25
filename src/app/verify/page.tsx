@@ -75,7 +75,6 @@ export default function VerifyPage() {
     <div className="flex min-h-screen flex-col">
       <header className="container flex h-14 items-center justify-between border-b">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Shield className="h-5 w-5" />
           Certify.me
         </Link>
         <ThemeToggle />
@@ -145,7 +144,9 @@ export default function VerifyPage() {
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-destructive">
-                        {isNotFound ? "Certificate Not Found" : "Verification Failed"}
+                        {isNotFound
+                          ? "Certificate Not Found"
+                          : "Verification Failed"}
                       </h3>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {isNotFound
@@ -243,7 +244,8 @@ export default function VerifyPage() {
                               href={`/user/${data.studentAddr}`}
                               className="font-mono text-xs text-primary hover:underline"
                             >
-                              {data.studentAddr.slice(0, 6)}...{data.studentAddr.slice(-4)}
+                              {data.studentAddr.slice(0, 6)}...
+                              {data.studentAddr.slice(-4)}
                             </Link>
                           </div>
                         </div>
@@ -346,7 +348,9 @@ export default function VerifyPage() {
                 <CardContent className="pt-6">
                   <div className="space-y-2 text-xs text-muted-foreground">
                     <p>
-                      <span className="font-medium text-foreground">On-Chain Status:</span>{" "}
+                      <span className="font-medium text-foreground">
+                        On-Chain Status:
+                      </span>{" "}
                       {data.revoked
                         ? "This certificate has been revoked by the issuer."
                         : data.isExpired
@@ -354,10 +358,16 @@ export default function VerifyPage() {
                         : "This certificate is valid and exists on-chain."}
                     </p>
                     <p>
-                      <span className="font-medium text-foreground">Network:</span> Sepolia Testnet
+                      <span className="font-medium text-foreground">
+                        Network:
+                      </span>{" "}
+                      Sepolia Testnet
                     </p>
                     <p className="font-mono break-all">
-                      <span className="font-medium text-foreground">Token URI:</span> {data.uri}
+                      <span className="font-medium text-foreground">
+                        Token URI:
+                      </span>{" "}
+                      {data.uri}
                     </p>
                   </div>
                 </CardContent>

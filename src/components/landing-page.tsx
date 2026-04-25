@@ -111,15 +111,29 @@ export default function LandingPage() {
 
       <footer className="border-t py-6">
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-          <p className="text-sm text-muted-foreground">
-            Built with Next.js and shadcn/ui. Powered by Polygon.
-          </p>
+          <p className="text-sm text-muted-foreground">Openlabs</p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <Link href="/verify" className="hover:text-foreground">
               Verify
             </Link>
             <Link href="/admin" className="hover:text-foreground">
               Admin
+            </Link>
+            <Link
+              href="https://drive.google.com/file/d/1NoSMfrAnB5hyyb_B8JWvtyGHDEMj0SRL/view?usp=drivesdk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground"
+            >
+              White Paper
+            </Link>
+            <Link
+              href={`https://sepolia.etherscan.io/address/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground"
+            >
+              Contract
             </Link>
           </div>
         </div>

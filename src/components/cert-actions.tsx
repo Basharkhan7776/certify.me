@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Copy, Share2, QrCode } from "lucide-react";
+import { ExternalLink, Copy, Share2, QrCode, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { CONTRACT_ADDRESS } from "@/lib/contract";
 
 interface CertActionsProps {
   etherscanTxUrl: string;
@@ -22,22 +23,29 @@ interface CertActionsProps {
 export function CertActions({ etherscanTxUrl, etherscanTokenUrl, shareUrl, tokenUri }: CertActionsProps) {
   const [qrOpen, setQrOpen] = useState(false);
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(shareUrl)}&size=300x300`;
+  const contractExplorerUrl = `https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`;
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {etherscanTxUrl && (
-          <a href={etherscanTxUrl} target="_blank" rel="noopener noreferrer">
+          <a href={etherscanTxUrl} target="_blank" rel="noopener noreferrer" className="w-full">
             <Button className="w-full gap-2">
               <ExternalLink className="h-4 w-4" />
               View TX on Etherscan
             </Button>
           </a>
         )}
-        <a href={etherscanTokenUrl} target="_blank" rel="noopener noreferrer">
+        <a href={etherscanTokenUrl} target="_blank" rel="noopener noreferrer" className="w-full">
           <Button variant="outline" className="w-full gap-2">
             <ExternalLink className="h-4 w-4" />
             View Token on Etherscan
+          </Button>
+        </a>
+        <a href={contractExplorerUrl} target="_blank" rel="noopener noreferrer" className="w-full">
+          <Button variant="outline" className="w-full gap-2">
+            <FileText className="h-4 w-4" />
+            View Contract on Etherscan
           </Button>
         </a>
         <Dialog open={qrOpen} onOpenChange={setQrOpen}>
