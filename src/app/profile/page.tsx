@@ -14,7 +14,10 @@ import {
   Save,
   X,
   CheckCircle,
-  AlertTriangle,
+  Award,
+  Calendar,
+  Network,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,15 +28,12 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { WalletConnect } from "@/components/wallet-connect";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CertCard } from "@/components/cert-card";
-import { VerifyBadge } from "@/components/verify-badge";
 import { useSession } from "next-auth/react";
 import { useAccount } from "wagmi";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ProfileData {
@@ -43,6 +43,7 @@ interface ProfileData {
     walletAddr: string;
     oauthProvider: string | null;
     blocked: boolean;
+    createdAt: string | null;
   };
   org: {
     name: string;
@@ -86,38 +87,14 @@ export default function ProfilePage() {
     enabled: !!address,
   });
 
-  const { data: certs, isLoading: loadingMetadata } = useQuery({
-    queryKey: ["cert-metadata", tokenIds],
-    queryFn: async () => {
-      if (!tokenIds?.length) return [];
-      const results = await Promise.all(
-        tokenIds.map(async (id: string) => {
-          const res = await fetch(`/api/cert/${id}`);
-          if (!res.ok) return null;
-          return res.json();
-        }),
-      );
-      return results.filter(Boolean);
-    },
-    enabled: !!tokenIds?.length,
-  });
-
-  const { data: mintedCerts, isLoading: loadingMinted } = useQuery({
-    queryKey: ["minted-certs", profile?.org?.orgCode],
+  const { data: mintedTokenIds, isLoading: loadingMintedIds } = useQuery<string[]>({
+    queryKey: ["minted-certs-ids", profile?.org?.orgCode],
     queryFn: async () => {
       if (!profile?.org?.orgCode) return [];
       const res = await fetch(`/api/students?orgCode=${profile.org.orgCode}`);
       if (!res.ok) return [];
       const data = await res.json();
-      if (!data.tokenIds?.length) return [];
-      const results = await Promise.all(
-        data.tokenIds.map(async (id: string) => {
-          const res = await fetch(`/api/cert/${id}`);
-          if (!res.ok) return null;
-          return res.json();
-        }),
-      );
-      return results.filter(Boolean);
+      return data.tokenIds || [];
     },
     enabled: !!profile?.org?.orgCode,
   });
@@ -184,7 +161,7 @@ export default function ProfilePage() {
                 <CardContent className="pt-6">
                   <div className="grid gap-4 sm:grid-cols-2">
                     {[1, 2, 3, 4].map((i) => (
-                      <Skeleton key={i} className="h-32 w-full" />
+                      <Skeleton key={i} className="h-24 w-full" />
                     ))}
                   </div>
                 </CardContent>
@@ -265,6 +242,15 @@ export default function ProfilePage() {
     navigator.clipboard.writeText(walletAddr);
     toast.success("Wallet address copied");
   };
+
+  const totalCerts = tokenIds?.length || 0;
+  const mintedCerts = mintedTokenIds?.length || 0;
+  const memberSince = profile.user.createdAt
+    ? new Date(profile.user.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
+    : "—";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -396,6 +382,15 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   )}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Member Since
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{memberSince}</span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -520,165 +515,142 @@ export default function ProfilePage() {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
-            {isOrg ? (
-              <Tabs defaultValue="received">
-                <TabsList>
-                  <TabsTrigger value="received">
-                    Received Certificates
-                  </TabsTrigger>
-                  <TabsTrigger value="minted">Minted by Me</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="received" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>My Certificates</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {loadingCerts || loadingMetadata ? (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {[1, 2].map((i) => (
-                            <Skeleton key={i} className="h-32 w-full" />
-                          ))}
-                        </div>
-                      ) : certs && certs.length > 0 ? (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {certs.map((cert: any) => (
-                            <div key={cert.tokenId} className="space-y-2">
-                              <CertCard
-                                id={String(cert.tokenId)}
-                                name={
-                                  cert.name || `Certificate #${cert.tokenId}`
-                                }
-                                issuer={cert.orgCode || "Unknown"}
-                                date={
-                                  cert.issueDate
-                                    ? new Date(
-                                        cert.issueDate,
-                                      ).toLocaleDateString()
-                                    : ""
-                                }
-                                tokenId={cert.tokenId}
-                                orgCode={cert.orgCode || ""}
-                              />
-                              <div className="px-1">
-                                <VerifyBadge
-                                  tokenId={cert.tokenId}
-                                  expectedStudent={
-                                    cert.studentAddr || walletAddr
-                                  }
-                                  expectedOrgCode={cert.orgCode}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-center py-8 text-muted-foreground">
-                          No certificates received.
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="minted" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Minted by Me</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {loadingMinted ? (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {[1, 2].map((i) => (
-                            <Skeleton key={i} className="h-32 w-full" />
-                          ))}
-                        </div>
-                      ) : mintedCerts && mintedCerts.length > 0 ? (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {mintedCerts.map((cert: any) => (
-                            <div key={cert.tokenId} className="space-y-2">
-                              <CertCard
-                                id={String(cert.tokenId)}
-                                name={
-                                  cert.name || `Certificate #${cert.tokenId}`
-                                }
-                                issuer={profile.org?.name || "Unknown"}
-                                date={
-                                  cert.issueDate
-                                    ? new Date(
-                                        cert.issueDate,
-                                      ).toLocaleDateString()
-                                    : ""
-                                }
-                                tokenId={cert.tokenId}
-                                orgCode={cert.orgCode || ""}
-                              />
-                              <div className="px-1">
-                                <VerifyBadge
-                                  tokenId={cert.tokenId}
-                                  expectedStudent={cert.studentAddr || ""}
-                                  expectedOrgCode={profile.org?.orgCode}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-center py-8 text-muted-foreground">
-                          No certificates minted yet.
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Card>
-                <CardHeader>
-                  <CardTitle>My Certificates</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {loadingCerts || loadingMetadata ? (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {[1, 2, 3].map((i) => (
-                        <Skeleton key={i} className="h-32 w-full" />
-                      ))}
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-primary/10 p-2">
+                      <Award className="h-5 w-5 text-primary" />
                     </div>
-                  ) : certs && certs.length > 0 ? (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {certs.map((cert: any) => (
-                        <div key={cert.tokenId} className="space-y-2">
-                          <CertCard
-                            id={String(cert.tokenId)}
-                            name={cert.name || `Certificate #${cert.tokenId}`}
-                            issuer={cert.orgCode || "Unknown"}
-                            date={
-                              cert.issueDate
-                                ? new Date(cert.issueDate).toLocaleDateString()
-                                : ""
-                            }
-                            tokenId={cert.tokenId}
-                            orgCode={cert.orgCode || ""}
-                          />
-                          <div className="px-1">
-                            <VerifyBadge
-                              tokenId={cert.tokenId}
-                              expectedStudent={cert.studentAddr || walletAddr}
-                              expectedOrgCode={cert.orgCode}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                    <div>
+                      <p className="text-2xl font-bold">{totalCerts}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isOrg ? "Received Certs" : "Certificates"}
+                      </p>
                     </div>
-                  ) : (
-                    <p className="text-center py-12 text-muted-foreground">
-                      No certificates found for your wallet.
-                    </p>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
-            )}
+
+              {isOrg && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-blue-500/10 p-2">
+                        <Building2 className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{mintedCerts}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Minted Certs
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-green-500/10 p-2">
+                      <Network className="h-5 w-5 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Sepolia</p>
+                      <p className="text-xs text-muted-foreground">Network</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-purple-500/10 p-2">
+                      <Clock className="h-5 w-5 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{memberSince}</p>
+                      <p className="text-xs text-muted-foreground">Joined</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-amber-500/10 p-2">
+                      <Shield className="h-5 w-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <Badge variant={profile.user.blocked ? "destructive" : "secondary"}>
+                        {profile.user.blocked ? "Blocked" : "Active"}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground mt-1">Status</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Links</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Link href="/app" className="block">
+                    <div className="rounded-lg border p-4 hover:bg-accent transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-lg bg-primary/10 p-2">
+                          <Award className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Dashboard</p>
+                          <p className="text-xs text-muted-foreground">
+                            View and manage certificates
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  <Link href="/verify" className="block">
+                    <div className="rounded-lg border p-4 hover:bg-accent transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-lg bg-green-500/10 p-2">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Verify</p>
+                          <p className="text-xs text-muted-foreground">
+                            Verify any certificate
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  {isOrg && (
+                    <Link href="/org-onboarding" className="block">
+                      <div className="rounded-lg border p-4 hover:bg-accent transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-lg bg-blue-500/10 p-2">
+                            <Building2 className="h-5 w-5 text-blue-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Org Settings</p>
+                            <p className="text-xs text-muted-foreground">
+                              Manage organization
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

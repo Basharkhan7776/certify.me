@@ -20,6 +20,7 @@ export async function GET(
         email: "",
         walletAddr,
         blocked: false,
+        oauthProvider: null,
         createdAt: null,
       });
     }
@@ -29,6 +30,7 @@ export async function GET(
       email: user.email || "",
       walletAddr: user.walletAddr,
       blocked: user.blocked,
+      oauthProvider: user.oauthProvider || null,
       createdAt: user.createdAt?.toISOString() || null,
     });
   } catch (error: any) {

@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
         walletAddr: user.walletAddr || "",
         oauthProvider: user.oauthProvider || null,
         blocked: user.blocked,
+        createdAt: user.createdAt?.toISOString() || null,
       },
       org: org
         ? {

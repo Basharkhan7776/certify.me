@@ -11,6 +11,8 @@ import {
   CheckCircle,
   Building2,
   User,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +24,7 @@ import { MintDialog } from "@/components/mint-dialog";
 import { MintedCertsTab } from "@/components/minted-certs-tab";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { setActiveTab, setMintDialogOpen } from "@/store/slices/uiSlice";
-import { useAccount } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +36,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertAction } from "@/components/ui/alert";
+import { shortAddress } from "@/lib/utils-admin";
 
 interface UserRole {
   isOrg: boolean;
@@ -54,6 +58,9 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "name">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [showWalletAlert, setShowWalletAlert] = useState(false);
+
+  const { disconnect } = useDisconnect();
 
   useEffect(() => {
     setMounted(true);
@@ -102,6 +109,14 @@ export default function DashboardPage() {
     }
   }, [address, sessionWalletAddr]);
 
+  useEffect(() => {
+    if (address && sessionWalletAddr && address.toLowerCase() !== sessionWalletAddr.toLowerCase()) {
+      setShowWalletAlert(true);
+    } else {
+      setShowWalletAlert(false);
+    }
+  }, [address, sessionWalletAddr]);
+
   const isLoading = status === "loading" || !mounted;
 
   const filteredCerts = useMemo(() => {
@@ -146,6 +161,31 @@ export default function DashboardPage() {
       </header>
 
       <main className="flex-1 container py-8">
+        {showWalletAlert && (
+          <Alert className="mb-6 border-amber-500/50 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription>
+              Connected wallet does not match your authorized wallet. Please connect with{" "}
+              <span className="font-mono font-medium">{shortAddress(sessionWalletAddr)}</span>{" "}
+              or disconnect to continue.
+            </AlertDescription>
+            <AlertAction>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 text-amber-500 hover:text-amber-600 hover:bg-amber-500/20"
+                onClick={() => {
+                  disconnect();
+                  setShowWalletAlert(false);
+                }}
+              >
+                <X className="h-3 w-3" />
+                Disconnect
+              </Button>
+            </AlertAction>
+          </Alert>
+        )}
+
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <Wallet className="h-12 w-12 text-muted-foreground mb-4 animate-pulse" />

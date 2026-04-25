@@ -107,6 +107,21 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <section className="container py-16 border-t">
+          <div className="mx-auto max-w-4xl text-center">
+            <h2 className="text-2xl font-bold mb-6">See It In Action</h2>
+            <div className="aspect-video w-full rounded-xl overflow-hidden border bg-muted shadow-lg">
+              <iframe
+                src="https://www.youtube.com/embed/nWWEvZf66k0?autoplay=1&mute=1&loop=1&playlist=nWWEvZf66k0&vq=hd1080"
+                title="Certify.me Demo"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t py-6">
