@@ -36,9 +36,14 @@ interface CertData {
 
 async function getCertData(tokenId: string): Promise<CertData | null> {
   try {
-    const res = await fetch(`${process.env.AUTH_URL || "http://localhost:3000"}/api/cert/${tokenId}`, {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${
+        process.env.NEXTAUTH_URL || "http://localhost:3000"
+      }/api/cert/${tokenId}`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -46,7 +51,11 @@ async function getCertData(tokenId: string): Promise<CertData | null> {
   }
 }
 
-export default async function CertPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CertPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const cert = await getCertData(id);
 
@@ -62,7 +71,9 @@ export default async function CertPage({ params }: { params: Promise<{ id: strin
         </header>
         <main className="flex-1 container py-24 text-center">
           <h1 className="text-2xl font-bold mb-2">Certificate Not Found</h1>
-          <p className="text-muted-foreground">This certificate does not exist on-chain.</p>
+          <p className="text-muted-foreground">
+            This certificate does not exist on-chain.
+          </p>
           <Link href="/">
             <Button className="mt-6">Go Home</Button>
           </Link>
@@ -71,9 +82,13 @@ export default async function CertPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const etherscanTxUrl = cert.txHash ? `https://sepolia.etherscan.io/tx/${cert.txHash}` : "";
+  const etherscanTxUrl = cert.txHash
+    ? `https://sepolia.etherscan.io/tx/${cert.txHash}`
+    : "";
   const etherscanTokenUrl = `https://sepolia.etherscan.io/token/${CONTRACT_ADDR}?a=${cert.tokenId}`;
-  const shareUrl = `${process.env.AUTH_URL || "http://localhost:3000"}/cert/${id}`;
+  const shareUrl = `${
+    process.env.NEXTAUTH_URL || "http://localhost:3000"
+  }/cert/${id}`;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -156,7 +171,9 @@ export default async function CertPage({ params }: { params: Promise<{ id: strin
                   <>
                     <Separator />
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Description</p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Description
+                      </p>
                       <p className="text-sm">{cert.description}</p>
                     </div>
                   </>
@@ -168,13 +185,17 @@ export default async function CertPage({ params }: { params: Promise<{ id: strin
                   <div>
                     <p className="text-muted-foreground">Date Issued</p>
                     <p className="font-medium">
-                      {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString() : "—"}
+                      {cert.issueDate
+                        ? new Date(cert.issueDate).toLocaleDateString()
+                        : "—"}
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Expiry Date</p>
                     <p className="font-medium">
-                      {cert.expiryDate ? new Date(cert.expiryDate).toLocaleDateString() : "Never"}
+                      {cert.expiryDate
+                        ? new Date(cert.expiryDate).toLocaleDateString()
+                        : "Never"}
                     </p>
                   </div>
                 </div>
@@ -183,7 +204,9 @@ export default async function CertPage({ params }: { params: Promise<{ id: strin
                   <>
                     <Separator />
                     <div>
-                      <p className="text-sm text-muted-foreground mb-2">Attributes</p>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Attributes
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {cert.attributes.map((attr) => (
                           <Badge key={attr.trait_type} variant="outline">
@@ -224,7 +247,9 @@ export default async function CertPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Token URI</span>
-                  <span className="font-mono text-xs break-all">{cert.uri}</span>
+                  <span className="font-mono text-xs break-all">
+                    {cert.uri}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Contract</span>

@@ -23,9 +23,14 @@ interface OrgData {
 
 async function getOrgData(orgCode: string): Promise<OrgData | null> {
   try {
-    const res = await fetch(`${process.env.AUTH_URL || "http://localhost:3000"}/api/orgs/${orgCode}`, {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${
+        process.env.NEXTAUTH_URL || "http://localhost:3000"
+      }/api/orgs/${orgCode}`,
+      {
+        cache: "no-store",
+      },
+    );
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -43,7 +48,11 @@ async function getOrgTokenIds(orgCode: string): Promise<string[]> {
   }
 }
 
-export default async function OrgPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function OrgPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id: orgCode } = await params;
   const org = await getOrgData(orgCode);
   const tokenIds = await getOrgTokenIds(orgCode);
@@ -60,7 +69,9 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
         </header>
         <main className="flex-1 container py-24 text-center">
           <h1 className="text-2xl font-bold mb-2">Organization Not Found</h1>
-          <p className="text-muted-foreground">This organization does not exist or is not approved.</p>
+          <p className="text-muted-foreground">
+            This organization does not exist or is not approved.
+          </p>
           <Link href="/">
             <Button className="mt-6">Go Home</Button>
           </Link>
@@ -69,7 +80,9 @@ export default async function OrgPage({ params }: { params: Promise<{ id: string
     );
   }
 
-  const shareUrl = `${process.env.AUTH_URL || "http://localhost:3000"}/org/${orgCode}`;
+  const shareUrl = `${
+    process.env.NEXTAUTH_URL || "http://localhost:3000"
+  }/org/${orgCode}`;
 
   return (
     <div className="flex min-h-screen flex-col">

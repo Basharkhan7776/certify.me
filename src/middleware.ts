@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
     try {
       const { payload } = await jwtVerify(
         token,
-        new TextEncoder().encode(process.env.AUTH_SECRET)
+        new TextEncoder().encode(process.env.NEXTAUTH_SECRET),
       );
 
       if ((payload as any).role !== "admin") {

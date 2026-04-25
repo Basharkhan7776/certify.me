@@ -1,21 +1,10 @@
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import { getMongoClient } from "./db";
+import { connectDB } from "./db";
 import { User } from "@/models/User";
 import { Admin } from "@/models/Admin";
 import { Org } from "@/models/Org";
 import type { NextAuthOptions } from "next-auth";
-
-let adapterInstance: ReturnType<typeof MongoDBAdapter> | undefined;
-
-async function getAdapter() {
-  if (!adapterInstance) {
-    const client = await getMongoClient();
-    adapterInstance = MongoDBAdapter(client);
-  }
-  return adapterInstance;
-}
 
 export const authConfig: NextAuthOptions = {
   providers: [
@@ -31,8 +20,11 @@ export const authConfig: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        await connectDB();
         if (!credentials?.email || !credentials?.password) return null;
-        const admin = await Admin.findOne({ email: credentials.email.toLowerCase() });
+        const admin = await Admin.findOne({
+          email: credentials.email.toLowerCase(),
+        });
         if (!admin) return null;
         const valid = await admin.comparePassword(credentials.password);
         if (!valid) return null;
@@ -44,9 +36,13 @@ export const authConfig: NextAuthOptions = {
       },
     }),
   ],
-  adapter: await getAdapter(),
+
+  // ✅ No adapter
+  session: { strategy: "jwt" },
+
   callbacks: {
     async signIn({ user, account, profile }) {
+      await connectDB(); // ✅
       if (account?.provider === "google" && user.email) {
         let existing = await User.findOne({ email: user.email.toLowerCase() });
         if (!existing) {
@@ -66,47 +62,51 @@ export const authConfig: NextAuthOptions = {
       }
       return true;
     },
+
+    async jwt({ token, user }: any) {
+      if (user?.role === "admin") token.role = "admin";
+      if (user?.id) token.sub = user.id;
+      return token;
+    },
+
     async session({ session, token }: any) {
-      if (!session?.user) return session;
-      if (!token) return session;
+      await connectDB(); // ✅
+      if (!session?.user || !token) return session;
 
       if (token.role === "admin") {
-        (session.user as any).role = "admin";
+        session.user.role = "admin";
       } else if (session.user.email) {
         let dbUser = await User.findById(token.sub);
         if (!dbUser) {
-          dbUser = await User.findOne({ email: session.user.email.toLowerCase() });
+          dbUser = await User.findOne({
+            email: session.user.email.toLowerCase(),
+          });
         }
         if (dbUser) {
-          (session.user as any).walletAddr = dbUser.walletAddr;
-          (session.user as any).blocked = dbUser.blocked;
-          (session.user as any).name = dbUser.name;
+          session.user.walletAddr = dbUser.walletAddr;
+          session.user.blocked = dbUser.blocked;
+          session.user.name = dbUser.name;
+
           const org = await Org.findOne({
-            $or: [{ contactEmail: dbUser.email }, { walletAddr: dbUser.walletAddr }],
+            $or: [
+              { contactEmail: dbUser.email },
+              { walletAddr: dbUser.walletAddr },
+            ],
             approved: true,
           });
+
           if (org) {
-            (session.user as any).isOrg = true;
-            (session.user as any).orgCode = org.orgCode;
-            (session.user as any).orgName = org.name;
-            (session.user as any).orgWalletAddr = org.walletAddr;
+            session.user.isOrg = true;
+            session.user.orgCode = org.orgCode;
+            session.user.orgName = org.name;
+            session.user.orgWalletAddr = org.walletAddr;
           }
         }
       }
       return session;
     },
-    async jwt({ token, user }: any) {
-      if (user?.role === "admin") {
-        token.role = "admin";
-      }
-      if (user?.id) {
-        token.sub = user.id;
-      }
-      return token;
-    },
   },
-  pages: {
-    signIn: "/auth",
-  },
-  secret: process.env.AUTH_SECRET,
+
+  pages: { signIn: "/auth" },
+  secret: process.env.NEXTAUTH_SECRET,
 };

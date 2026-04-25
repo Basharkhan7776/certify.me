@@ -7,17 +7,26 @@ export async function POST(req: NextRequest) {
     const { email, password } = await req.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email and password required" },
+        { status: 400 },
+      );
     }
 
     const admin = await Admin.findOne({ email: email.toLowerCase() });
     if (!admin) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 },
+      );
     }
 
     const valid = await admin.comparePassword(password);
     if (!valid) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 },
+      );
     }
 
     const token = await new SignJWT({
@@ -27,7 +36,7 @@ export async function POST(req: NextRequest) {
     })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("7d")
-      .sign(new TextEncoder().encode(process.env.AUTH_SECRET));
+      .sign(new TextEncoder().encode(process.env.NEXTAUTH_SECRET));
 
     const response = NextResponse.json({ success: true });
     response.cookies.set("admin-token", token, {
@@ -40,6 +49,9 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
