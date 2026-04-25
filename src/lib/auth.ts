@@ -48,21 +48,41 @@ export const authConfig: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === "google" && user.email) {
-        let existing = await User.findOne({ email: user.email.toLowerCase() });
-        if (!existing) {
-          existing = await User.create({
-            name: user.name || profile?.name || "",
-            email: user.email.toLowerCase(),
-            oauthProvider: account.provider,
-            oauthId: account.providerAccountId,
-            blocked: false,
-          });
-        } else if (!existing.oauthProvider) {
-          existing.oauthProvider = account.provider;
-          existing.oauthId = account.providerAccountId;
-          await existing.save();
+        const email = user.email.toLowerCase();
+        try {
+          let dbUser = await User.findOne({ email });
+
+          if (!dbUser) {
+            dbUser = await User.create({
+              name: user.name || profile?.name || "",
+              email,
+              oauthProvider: account.provider,
+              oauthId: account.providerAccountId,
+              blocked: false,
+            });
+          } else if (!dbUser.oauthProvider) {
+            dbUser.oauthProvider = account.provider;
+            dbUser.oauthId = account.providerAccountId;
+            await dbUser.save();
+          }
+
+          if (user.id && dbUser._id.toString() !== user.id) {
+            await User.findByIdAndUpdate(user.id, {
+              name: dbUser.name,
+              email: dbUser.email,
+              oauthProvider: dbUser.oauthProvider,
+              oauthId: dbUser.oauthId,
+              walletAddr: dbUser.walletAddr,
+              blocked: dbUser.blocked,
+            }).catch(() => {});
+          }
+
+          user.id = dbUser._id.toString();
+          user.name = dbUser.name || user.name;
+          user.email = dbUser.email;
+        } catch (err) {
+          console.error("Auth signIn error:", err);
         }
-        user.id = existing._id.toString();
       }
       return true;
     },
