@@ -5,6 +5,7 @@ import { getMongoClient } from "./db";
 import { User } from "@/models/User";
 import { Admin } from "@/models/Admin";
 import { Org } from "@/models/Org";
+import { connectDB } from "./db";
 import type { NextAuthOptions } from "next-auth";
 
 let adapterInstance: ReturnType<typeof MongoDBAdapter> | undefined;
@@ -48,8 +49,10 @@ export const authConfig: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === "google" && user.email) {
-        const email = user.email.toLowerCase();
         try {
+          await connectDB();
+          const email = user.email.toLowerCase();
+
           let dbUser = await User.findOne({ email });
 
           if (!dbUser) {
@@ -66,17 +69,6 @@ export const authConfig: NextAuthOptions = {
             await dbUser.save();
           }
 
-          if (user.id && dbUser._id.toString() !== user.id) {
-            await User.findByIdAndUpdate(user.id, {
-              name: dbUser.name,
-              email: dbUser.email,
-              oauthProvider: dbUser.oauthProvider,
-              oauthId: dbUser.oauthId,
-              walletAddr: dbUser.walletAddr,
-              blocked: dbUser.blocked,
-            }).catch(() => {});
-          }
-
           user.id = dbUser._id.toString();
           user.name = dbUser.name || user.name;
           user.email = dbUser.email;
@@ -86,6 +78,11 @@ export const authConfig: NextAuthOptions = {
       }
       return true;
     },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return `${baseUrl}/app`;
+    },
     async session({ session, token }: any) {
       if (!session?.user) return session;
       if (!token) return session;
@@ -93,24 +90,29 @@ export const authConfig: NextAuthOptions = {
       if (token.role === "admin") {
         (session.user as any).role = "admin";
       } else if (session.user.email) {
-        let dbUser = await User.findById(token.sub);
-        if (!dbUser) {
-          dbUser = await User.findOne({ email: session.user.email.toLowerCase() });
-        }
-        if (dbUser) {
-          (session.user as any).walletAddr = dbUser.walletAddr;
-          (session.user as any).blocked = dbUser.blocked;
-          (session.user as any).name = dbUser.name;
-          const org = await Org.findOne({
-            $or: [{ contactEmail: dbUser.email }, { walletAddr: dbUser.walletAddr }],
-            approved: true,
-          });
-          if (org) {
-            (session.user as any).isOrg = true;
-            (session.user as any).orgCode = org.orgCode;
-            (session.user as any).orgName = org.name;
-            (session.user as any).orgWalletAddr = org.walletAddr;
+        try {
+          await connectDB();
+          let dbUser = await User.findById(token.sub);
+          if (!dbUser) {
+            dbUser = await User.findOne({ email: session.user.email.toLowerCase() });
           }
+          if (dbUser) {
+            (session.user as any).walletAddr = dbUser.walletAddr;
+            (session.user as any).blocked = dbUser.blocked;
+            (session.user as any).name = dbUser.name;
+            const org = await Org.findOne({
+              $or: [{ contactEmail: dbUser.email }, { walletAddr: dbUser.walletAddr }],
+              approved: true,
+            });
+            if (org) {
+              (session.user as any).isOrg = true;
+              (session.user as any).orgCode = org.orgCode;
+              (session.user as any).orgName = org.name;
+              (session.user as any).orgWalletAddr = org.walletAddr;
+            }
+          }
+        } catch (err) {
+          console.error("Auth session error:", err);
         }
       }
       return session;

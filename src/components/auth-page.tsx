@@ -2,7 +2,6 @@
 
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,11 +11,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { toast } from "sonner";
 
 export default function AuthPage() {
   function handleGoogleSignIn() {
-    toast.loading("Redirecting to Google...");
     signIn("google", { callbackUrl: "/app" });
   }
 
@@ -24,6 +21,7 @@ export default function AuthPage() {
     <div className="flex min-h-screen flex-col">
       <header className="container flex h-14 items-center justify-between border-b">
         <Link href="/" className="flex items-center gap-2 font-semibold">
+          <span className="bg-foreground text-background rounded-md px-1.5 py-0.5 text-sm font-bold tracking-tight">C</span>
           Certify.me
         </Link>
         <ThemeToggle />
