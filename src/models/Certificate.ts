@@ -11,6 +11,7 @@ export interface ICertificate {
   expiryDate?: Date;
   attributes: { trait_type: string; value: string }[];
   revoked: boolean;
+  txHash?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +33,7 @@ const CertificateSchema = new Schema<ICertificate>(
       },
     ],
     revoked: { type: Boolean, default: false },
+    txHash: { type: String },
   },
   { timestamps: true }
 );

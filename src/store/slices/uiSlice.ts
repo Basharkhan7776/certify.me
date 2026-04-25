@@ -3,11 +3,13 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface UIState {
   activeTab: "my-certs" | "minted";
   sidebarCollapsed: boolean;
+  mintDialogOpen: boolean;
 }
 
 const initialState: UIState = {
   activeTab: "my-certs",
   sidebarCollapsed: false,
+  mintDialogOpen: false,
 };
 
 export const uiSlice = createSlice({
@@ -20,8 +22,11 @@ export const uiSlice = createSlice({
     toggleSidebar(state) {
       state.sidebarCollapsed = !state.sidebarCollapsed;
     },
+    setMintDialogOpen(state, action: PayloadAction<boolean>) {
+      state.mintDialogOpen = action.payload;
+    },
   },
 });
 
-export const { setActiveTab, toggleSidebar } = uiSlice.actions;
+export const { setActiveTab, toggleSidebar, setMintDialogOpen } = uiSlice.actions;
 export default uiSlice.reducer;

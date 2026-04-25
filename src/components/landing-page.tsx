@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Grainient from "@/components/Grainient";
+import PixelSnow from "./PixelSnow";
 
 export default function LandingPage() {
   const { resolvedTheme } = useTheme();
@@ -28,8 +29,10 @@ export default function LandingPage() {
       <div className="fixed inset-0 z-[-1]">
         {mounted && (
           <Grainient
-            color1="#cf74cd"
-            color2={resolvedTheme === "dark" ? "#000000" : "#ffffff"}
+            color1={resolvedTheme === "dark" ? "#000000" : "#ffffff"}
+            color3={resolvedTheme === "dark" ? "#000000" : "#ffffff"}
+            color2="#cd7474"
+            grainAmount={0}
           />
         )}
       </div>

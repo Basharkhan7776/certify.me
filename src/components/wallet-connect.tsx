@@ -23,6 +23,11 @@ export function WalletConnect() {
   const { disconnect: wagmiDisconnect } = useDisconnect();
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isConnected && address) {
@@ -30,6 +35,15 @@ export function WalletConnect() {
       dispatch(setWalletAddr(address));
     }
   }, [isConnected, address, dispatch]);
+
+  if (!mounted) {
+    return (
+      <span className="inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-input bg-transparent px-4 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 cursor-pointer">
+        <Wallet className="h-4 w-4" />
+        Connect Wallet
+      </span>
+    );
+  }
 
   if (isConnected && address) {
     return (

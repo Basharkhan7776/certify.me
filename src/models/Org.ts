@@ -27,5 +27,7 @@ const OrgSchema = new Schema<IOrg>(
   { timestamps: true }
 );
 
+OrgSchema.index({ orgCode: 1 }, { unique: true });
+
 export const Org: Model<IOrg> =
   mongoose.models.Org || mongoose.model<IOrg>("Org", OrgSchema);

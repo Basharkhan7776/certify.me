@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -84,7 +90,6 @@ export default function AdminLoginPage() {
     <div className="flex min-h-screen flex-col">
       <header className="container flex h-14 items-center justify-between border-b">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Shield className="h-5 w-5" />
           Certify.me
         </Link>
         <ThemeToggle />
