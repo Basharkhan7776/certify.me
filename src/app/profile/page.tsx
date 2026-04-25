@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { WalletConnect } from "@/components/wallet-connect";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CertCard } from "@/components/cert-card";
 import { VerifyBadge } from "@/components/verify-badge";
@@ -269,7 +270,10 @@ export default function ProfilePage() {
           <Shield className="h-5 w-5" />
           Certify.me
         </Link>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <WalletConnect />
+        </div>
       </header>
 
       <main className="flex-1 container py-8">

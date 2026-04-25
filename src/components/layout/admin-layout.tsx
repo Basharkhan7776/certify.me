@@ -30,6 +30,8 @@ export default function AdminLayout({
 
   async function handleSignOut() {
     await fetch("/api/admin/logout", { method: "POST" });
+    document.cookie = "next-auth.session-token=; max-age=0; path=/";
+    document.cookie = "__Secure-next-auth.session-token=; max-age=0; path=/";
     toast.success("Signed out");
     router.push("/admin");
   }

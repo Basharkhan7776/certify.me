@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Wallet, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
+import { signOut } from "next-auth/react";
 
 export function WalletConnect() {
   const { address, isConnected } = useAccount();
@@ -36,6 +37,12 @@ export function WalletConnect() {
     }
   }, [isConnected, address, dispatch]);
 
+  const handleDisconnect = async () => {
+    wagmiDisconnect();
+    dispatch(walletDisconnect());
+    await signOut({ callbackUrl: "/" });
+  };
+
   if (!mounted) {
     return (
       <span className="inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-input bg-transparent px-4 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 cursor-pointer">
@@ -55,10 +62,7 @@ export function WalletConnect() {
           variant="outline"
           size="sm"
           className="gap-1"
-          onClick={() => {
-            wagmiDisconnect();
-            dispatch(walletDisconnect());
-          }}
+          onClick={handleDisconnect}
         >
           <LogOut className="h-3 w-3" />
         </Button>
