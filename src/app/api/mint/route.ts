@@ -20,9 +20,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const existing = await Certificate.findOne({ tokenId });
-    if (existing) {
-      return NextResponse.json({ error: "Certificate already exists" }, { status: 409 });
+    if (txHash) {
+      const existing = await Certificate.findOne({ txHash });
+      if (existing) {
+        return NextResponse.json({ success: true, alreadyExists: true });
+      }
     }
 
     await Certificate.create({
@@ -41,6 +43,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    if (error.code === 11000) {
+      return NextResponse.json({ success: true, alreadyExists: true });
+    }
     return NextResponse.json({ error: error.message || "Failed to save certificate" }, { status: 500 });
   }
 }

@@ -18,7 +18,7 @@ export interface ICertificate {
 
 const CertificateSchema = new Schema<ICertificate>(
   {
-    tokenId: { type: Number, required: true, unique: true, index: true },
+    tokenId: { type: Number, required: true, index: true },
     orgCode: { type: String, required: true, index: true },
     studentAddr: { type: String, required: true, index: true },
     ipfsUri: { type: String, required: true },
@@ -33,7 +33,7 @@ const CertificateSchema = new Schema<ICertificate>(
       },
     ],
     revoked: { type: Boolean, default: false },
-    txHash: { type: String },
+    txHash: { type: String, unique: true },
   },
   { timestamps: true }
 );
