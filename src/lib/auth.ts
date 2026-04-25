@@ -52,6 +52,35 @@ export const authConfig: NextAuthOptions = {
         try {
           await connectDB();
           const email = user.email.toLowerCase();
+          const client = await getMongoClient();
+          const db = client.db();
+          const accountsCollection = db.collection("accounts");
+
+          const existingAccount = await accountsCollection.findOne({
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+          });
+
+          if (!existingAccount) {
+            const staleAccount = await accountsCollection.findOne({
+              provider: account.provider,
+            });
+            if (staleAccount) {
+              await accountsCollection.updateOne(
+                { _id: staleAccount._id },
+                {
+                  $set: {
+                    providerAccountId: account.providerAccountId,
+                    access_token: account.access_token,
+                    expires_at: account.expires_at,
+                    token_type: account.token_type,
+                    scope: account.scope,
+                    id_token: account.id_token,
+                  },
+                }
+              );
+            }
+          }
 
           let dbUser = await User.findOne({ email });
 
@@ -63,7 +92,7 @@ export const authConfig: NextAuthOptions = {
               oauthId: account.providerAccountId,
               blocked: false,
             });
-          } else if (!dbUser.oauthProvider) {
+          } else {
             dbUser.oauthProvider = account.provider;
             dbUser.oauthId = account.providerAccountId;
             await dbUser.save();
